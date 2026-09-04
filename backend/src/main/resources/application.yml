@@ -1,0 +1,90 @@
+spring:
+  application:
+    name: nexus-crm
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  datasource:
+    url: ${CRM_DB_URL:jdbc:postgresql://localhost:5432/crm}
+    username: ${CRM_DB_USERNAME:crm}
+    password: ${CRM_DB_PASSWORD:crm}
+    hikari:
+      maximum-pool-size: 20
+      connection-timeout: 5000
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc.batch_size: 100
+        order_inserts: true
+        order_updates: true
+  flyway:
+    locations: classpath:db/migration
+  data:
+    redis:
+      url: ${CRM_REDIS_URL:redis://localhost:6379}
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
+  jackson:
+    default-property-inclusion: non_null
+    time-zone: UTC
+    serialization:
+      write-dates-as-timestamps: false
+
+server:
+  port: 8080
+  forward-headers-strategy: framework
+  error:
+    include-message: never
+    include-stacktrace: never
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when_authorized
+
+crm:
+  app:
+    name: Nexus CRM
+    api-prefix: /api/v1
+    jwt-secret: ${CRM_JWT_SECRET:dev-only-secret-change-me-0123456789abcdef0123456789abcdef0123456789abcdef}
+    jwt-access-minutes: 15
+    jwt-refresh-days: 30
+    cors-origins: ${CRM_CORS_ORIGINS:http://localhost:5173,http://localhost:4173}
+    encryption-key: ${CRM_ENCRYPTION_KEY:dev-only-encryption-key-change-me-0123456789abcdef}
+    storage-dir: ${CRM_STORAGE_DIR:./data/storage}
+    app-url: ${CRM_APP_URL:http://localhost:5173}
+  ratelimit:
+    enabled: ${CRM_RATE_LIMIT:true}
+  bridge:
+    # Android Phone Bridge (user's own phone + SIM). Blank = calling reports Integration Required.
+    base-url: ${CRM_BRIDGE_URL:}
+    token: ${CRM_BRIDGE_TOKEN:}
+  seed:
+    enabled: ${CRM_SEED:true}
+    admin-email: ${CRM_ADMIN_EMAIL:admin@nexuscrm.local}
+    admin-password: ${CRM_ADMIN_PASSWORD:Admin123!}
+    org-name: ${CRM_ORG_NAME:Nexus Sales}
+  mail:
+    host: ${CRM_MAIL_HOST:localhost}
+    port: ${CRM_MAIL_PORT:1025}
+    username: ${CRM_MAIL_USERNAME:}
+    password: ${CRM_MAIL_PASSWORD:}
+    from: ${CRM_MAIL_FROM:hazeljones.cse@gmail.com}
+  ai:
+    api-key: ${CRM_AI_API_KEY:}
+    base-url: ${CRM_AI_BASE_URL:https://api.openai.com/v1}
+    model: ${CRM_AI_MODEL:gpt-4o-mini}

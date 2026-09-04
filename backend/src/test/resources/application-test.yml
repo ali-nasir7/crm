@@ -1,0 +1,11 @@
+spring:
+  profiles:
+    include: dev
+crm:
+  seed:
+    enabled: true
+    admin-email: admin@test.local
+    admin-password: Admin123!
+    org-name: Test Org
+---
+# disable redis-dependent beans gracefully in tests: rate limiter fails open

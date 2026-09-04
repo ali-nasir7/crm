@@ -1,0 +1,12 @@
+:5173 {
+  encode gzip
+  # API proxy — never call localhost from the browser; the edge proxies /api to the backend
+  handle /api/* {
+    reverse_proxy backend:8080
+  }
+  handle {
+    root /srv
+    try_files {path} /index.html
+    file_server
+  }
+}
