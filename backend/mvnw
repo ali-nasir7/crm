@@ -1,0 +1,17 @@
+#!/bin/sh
+# Maven Wrapper (bootstrap edition): uses `mvn` if installed, otherwise downloads Maven once
+# into $HOME/.m2/wrapper and runs it from there. Requires only curl or wget.
+set -e
+MVN_VERSION=$(grep '^distributionUrl=' .mvn/wrapper/maven-wrapper.properties | sed 's/.*apache-maven-\([^/]*\)\/apache-maven-.*/\1/')
+WRAPPER_DIR="$HOME/.m2/wrapper/apache-maven-$MVN_VERSION"
+if [ ! -x "$WRAPPER_DIR/bin/mvn" ]; then
+  echo "Downloading Apache Maven $MVN_VERSION..."
+  URL=$(grep '^distributionUrl=' .mvn/wrapper/maven-wrapper.properties | cut -d= -f2-)
+  mkdir -p "$WRAPPER_DIR"
+  TARBALL=$(mktemp /tmp/maven.XXXXXX.zip)
+  if command -v curl >/dev/null 2>&1; then curl -fsSL "$URL" -o "$TARBALL"; else wget -qO "$TARBALL" "$URL"; fi
+  unzip -q "$TARBALL" -d "$WRAPPER_DIR.tmp"
+  mv "$WRAPPER_DIR.tmp/apache-maven-$MVN_VERSION"/* "$WRAPPER_DIR/"
+  rm -rf "$WRAPPER_DIR.tmp" "$TARBALL"
+fi
+exec "$WRAPPER_DIR/bin/mvn" "$@"

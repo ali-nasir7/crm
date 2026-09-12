@@ -1,0 +1,80 @@
+# Nexus CRM — one-command development stack
+#   docker compose up --build
+# Backend: http://localhost:8080  (Swagger: /swagger-ui.html)
+# Frontend: http://localhost:5173
+name: nexus-crm
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: crm
+      POSTGRES_USER: crm
+      POSTGRES_PASSWORD: crm
+    ports: ["5432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crm -d crm"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:v1.20
+    ports: ["1025:1025", "8025:8025"] # SMTP + web UI — dev only, catches all outgoing mail
+
+  backend:
+    build: ./backend
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      CRM_DB_URL: jdbc:postgresql://postgres:5432/crm
+      CRM_DB_USERNAME: crm
+      CRM_DB_PASSWORD: crm
+      CRM_REDIS_URL: redis://redis:6379
+      CRM_MAIL_HOST: mailpit
+      CRM_MAIL_PORT: "1025"
+      CRM_JWT_SECRET: ${CRM_JWT_SECRET:-dev-only-secret-change-me-0123456789abcdef0123456789abcdef}
+      CRM_ENCRYPTION_KEY: ${CRM_ENCRYPTION_KEY:-dev-only-encryption-key-change-me-0123456789abcdef}
+      CRM_APP_URL: http://localhost:5173
+      CRM_CORS_ORIGINS: http://localhost:5173,http://localhost:4173
+      CRM_ADMIN_EMAIL: ${CRM_ADMIN_EMAIL:-admin@nexuscrm.local}
+      CRM_ADMIN_PASSWORD: ${CRM_ADMIN_PASSWORD:-Admin123!}
+      CRM_MAIL_USERNAME: ${CRM_MAIL_USERNAME:-}
+      CRM_MAIL_PASSWORD: ${CRM_MAIL_PASSWORD:-}
+      CRM_MAIL_FROM: ${CRM_MAIL_FROM:-hazeljones.cse@gmail.com}
+      CRM_BRIDGE_URL: ${CRM_BRIDGE_URL:-}
+      CRM_BRIDGE_TOKEN: ${CRM_BRIDGE_TOKEN:-}
+      CRM_SEED: "true"
+      # CRM_AI_API_KEY: sk-...   # optional — enables OpenAI-compatible AI provider
+    ports: ["8080:8080"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q UP"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      backend: { condition: service_started }
+    environment:
+      VITE_API_BASE_URL: /api/v1
+    ports: ["5173:5173"]
+
+volumes:
+  pgdata:
